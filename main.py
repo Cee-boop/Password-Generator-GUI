@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 
 # ---------------------------- PASSWORD GENERATOR ------------------------------- #
@@ -37,17 +38,52 @@ def log_details():
     email = email_username_input.get()
     password = password_input.get()
 
+    new_data = {
+        website: {
+            'email': email,
+            'password': password
+
+        }
+    }
+
     if len(website) == 0 or len(password) == 0:
         messagebox.showinfo(title="Oops!", message="Please don't leave any fields empty!")
     else:
-        is_ok = messagebox.askokcancel(title=website, message=f"These are the details entered: \nEmail: {email} "
-                                                        f"\nPassword: {password} \nIs it OK to save?")
-        if is_ok:
-            with open("./data.txt", mode='a') as data_file:
-                log = f"{website} | {email} | {password}\n"
-                data_file.write(log)
-                website_input.delete(0, END)
-                password_input.delete(0, END)
+        try:
+            with open("data.json", mode="r") as data_file:
+                # reading old data:
+                data = json.load(data_file)
+        except FileNotFoundError:
+            with open("data.json", mode="w") as data_file:
+                json.dump(new_data, data_file, indent=4)
+        else:
+            # updating old data with new data:
+            data.update(new_data)
+
+            with open("data.json", mode="w") as data_file:
+                # saving updated data:
+                json.dump(data, data_file, indent=4)
+        finally:
+            website_input.delete(0, END)
+            password_input.delete(0, END)
+
+
+# ----------------------------- LOOKUP SAVED DETAILS ----------------------
+def lookup_details():
+    website = website_input.get()
+
+    try:
+        with open('data.json', mode='r') as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No data file found.")
+    else:
+        if website in data:
+            email = data[website]['email']
+            password = data[website['[password']]
+            messagebox.showinfo(title=website, message=f"Email: {email} \nPassword: {password}")
+        else:
+            messagebox.showinfo(title="Oops!", message=f"No details for {website} exists.")
 
 
 # ---------------------------- UI SETUP -------------------------------
@@ -62,9 +98,13 @@ canvas.grid(row=0, column=1)
 
 website_title = Label(text="Website:", font=('Arial', 14, 'normal'))
 website_title.grid(row=1, column=0)
-website_input = Entry(width=35)
+website_input = Entry(width=21)
 website_input.focus()
-website_input.grid(row=1, column=1, columnspan=2)
+website_input.grid(row=1, column=1)
+
+search_button = Button(text="Search", width=13, command=lookup_details)
+search_button.grid(row=1, column=2)
+
 
 email_username_title = Label(text="Email/Username:", font=('Arial', 14, 'normal'))
 email_username_title.grid(row=2, column=0)
